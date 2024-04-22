@@ -1,2 +1,3 @@
-# CMALforDiffusionModels
-Computational application of Controlled Minibatch Algorithms on Diffusion Models
+Initial version of the CMA Light Algorithm as described in the paper.
+
+https://arxiv.org/abs/2307.15775

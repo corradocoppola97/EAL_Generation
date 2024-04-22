@@ -1,0 +1,10 @@
+data
+Results
+Plots
+.idea
+Test
+__pycache__
+model_best.pth
+*.txt
+
+
