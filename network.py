@@ -1,5 +1,6 @@
 import torch
 import torchvision
+from diffusionModel import SimpleUnet
 
 def initialize_weights(model):
     for m in model.modules():
@@ -163,5 +164,18 @@ def get_object_detection_model(num_classes):
                        rpn_anchor_generator=anchor_generator)
 
     return model
+
+# Definizione della rete
+def get_diffusion_model(num_classes, pretrained=False, checkpoint=None):
+    # Caricamento del backbone ResNet-50 pre-addestrato
+    
+    if pretrained:
+        pretrainedmodel = SimpleUnet()
+        pretrainedmodel.load_state_dict(torch.load(checkpoint))
+    else:
+        pretrainedmodel = SimpleUnet()
+        initialize_weights(pretrainedmodel)
+
+    return pretrainedmodel
 
 

@@ -10,14 +10,18 @@ import ast
 import torchvision
 from typing import Union
 from cmalight import CMA_L
-
-
+from utils_diffusion_model import T
+from diffusionModel import forward_diffusion_sample
+import torch.nn.functional as F
+from tqdm import tqdm
 
 #Used to compute the loss function over the entire data set
 def closure(data_loader: torch.utils.data.DataLoader,
             model: torchvision.models,
             criterion: torch.nn,
             device: Union[torch.device,str]):
+    
+    model.eval()
     loss = 0
     with torch.no_grad():
         for x,y in data_loader:
@@ -27,10 +31,34 @@ def closure(data_loader: torch.utils.data.DataLoader,
             loss += batch_loss.item()*(len(x)/len(data_loader.dataset))
     return loss
 
+#Used to compute the loss function for DDPM over the entire data set
+def closure_diffusion(data_loader: torch.utils.data.DataLoader,
+            model: torchvision.models,
+            criterion: torch.nn,
+            device: Union[torch.device,str]):
+    
+    model.eval()
+    loss = 0
+    with torch.no_grad():
+        for step, batch in tqdm(enumerate(data_loader), total = len(data_loader), desc='closure_loop', position = 1, leave=False):
+            x = batch[0].to(device)
+            batch_size = x.shape[0]
+
+            t = torch.randint(0, T, (batch_size,), device=device).long()
+
+            x_noisy, noise = forward_diffusion_sample(x, t, device)
+            noise_pred = model(x_noisy, t)
+            batch_loss = criterion(noise_pred, noise)
+            loss += batch_loss.item()*(len(x)/len(data_loader.dataset))
+
+    return loss
+
 #Used to compute the accuracy over the entire data set
 def accuracy(data_loader: torch.utils.data.DataLoader,
             model: torchvision.models,
             device: Union[torch.device,str]):
+    
+    model.eval()
     correct_predictions = 0
     total_samples = 0
 
@@ -41,6 +69,35 @@ def accuracy(data_loader: torch.utils.data.DataLoader,
             _, predicted = torch.max(outputs, 1)
             total_samples += labels.size(0)
             correct_predictions += (predicted == labels).sum().item()
+
+    accuracy = correct_predictions / total_samples
+    return accuracy
+
+#Used to compute the accuracy for DDPM over the entire data set
+def accuracy_diffusion(data_loader: torch.utils.data.DataLoader,
+            model: torchvision.models,
+            device: Union[torch.device,str]):
+    
+    model.eval()
+    correct_predictions = 0
+    total_samples = 0
+    tolerance = 1e-1
+
+    with torch.no_grad():
+        for step, batch in tqdm(enumerate(data_loader), total = len(data_loader), desc='accuracy_loop', position = 1, leave=False):
+            x = batch[0].to(device)
+            batch_size = x.shape[0]
+
+            t = torch.randint(0, T, (batch_size,), device=device).long()
+
+            x_noisy, noise = forward_diffusion_sample(x, t, device)
+            noise_pred = model(x_noisy, t)
+
+            noise = noise.view(-1)
+            noise_pred = noise_pred.view(-1)
+
+            correct_predictions += torch.sum(torch.abs(noise - noise_pred) < tolerance).item()
+            total_samples += noise.shape[0]
 
     accuracy = correct_predictions / total_samples
     return accuracy
@@ -155,7 +212,7 @@ def extract_history(history_file):
 #
 
 
-os.chdir('Results')
+# os.chdir('Results')
 net = 'swin_t'
 dataset = 'cifar10'
 nets = ['resnet18', 'resnet34', 'resnet50','resnet152','swin_t','swin_b','efficientnet_v2_l','mobilenet_v2']
