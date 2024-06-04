@@ -1,5 +1,5 @@
 import time, os , argparse
-from utils import closure, closure_diffusion, count_parameters, set_optimizer, accuracy, accuracy_diffusion, hardware_check
+from utils import closure, closure_diffusion, count_parameters, set_optimizer, set_scheduler, accuracy, accuracy_diffusion, hardware_check
 from cmalight import get_w
 from network import get_pretrained_net, get_diffusion_model
 import torch
@@ -10,13 +10,14 @@ from tqdm import tqdm
 import torch.nn.functional as F
 from utils_diffusion_model import T
 from diffusionModel import forward_diffusion_sample
-
+import json
 
 filterwarnings('ignore')
 
 
 def train_model(sm_root: str,
                 opt: str,
+                slr: str,
                 ep: int,
                 ds: str,
                 net_name: str,
@@ -39,6 +40,11 @@ def train_model(sm_root: str,
     criterion = F.mse_loss
     # Optimizer
     optimizer = set_optimizer(opt, model)
+    #scheduler
+    if slr != None:
+        print("Setting scheduler")
+        scheduler = set_scheduler(slr, optimizer)
+
     # Initial Setup
     min_acc = 0
     t1 = time.time()
@@ -116,6 +122,14 @@ def train_model(sm_root: str,
 
         elapsed_time_4_epoch = time.time() - start_time
 
+        # scheduler step
+        if slr != None:
+            if slr == "ReduceLROnPlateau":
+                #TODO: Adapt to get both accuracy and loss based on mode 'min', 'max'
+                scheduler.step(val_loss)
+            else:
+                scheduler.step()
+
         history['train_loss'].append(f_after)
         history['val_loss'].append(val_loss)
         history['train_acc'].append(train_accuracy)
@@ -146,10 +160,15 @@ if __name__ == '__main__':
     parser.add_argument('--ep', type=int, default=10)
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--seed', type=float, default=12345)
+
     # parser.add_argument('--network', type=str, required=True)
     # parser.add_argument('--opt', type=str, required=True)
     parser.add_argument('--network', type=str, default='unet')
-    parser.add_argument('--opt', type=str, default='adam')
+    parser.add_argument('--opt', type=str, default='sgd')
+
+    parser.add_argument('--scheduler', type=str, default='StepLR')
+    # parser.add_argument('--scheduler', type=str, default=None)
+
     parser.add_argument('--dts', type=str, default='cifar10')
     parser.add_argument('--trial', type=str, default='l2loss')
 
@@ -188,6 +207,10 @@ if __name__ == '__main__':
         testset = torchvision.datasets.CIFAR100(root=dts_root, train=False, download=True, transform=transform)
         num_classes = len(trainset.classes)
     
+
+
+
+    # ==================== DATASET PRINTS ====================
     # print(len(trainset))
     # print(len(testset))
     
@@ -197,27 +220,46 @@ if __name__ == '__main__':
     # trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, pin_memory=True, num_workers=nw) # Togliere random reshuffle --> shuffle=False
     # testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False, pin_memory=True, num_workers=nw)
 
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True) # Togliere random reshuffle --> shuffle=False
-    testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False)
-    history = train_model(sm_root='/work/results/models_nonpretrained/', 
-                          opt=args.opt, 
-                          ep=args.ep, 
-                          ds=args.dts, 
-                          net_name=args.network, 
-                          n_class=num_classes, 
-                          history_ID=args.trial, 
-                          dts_train=trainloader, 
-                          dts_test=testloader,
-                          verbose_train=False)
-
     # sample = next(iter(trainloader))
     # print(len(sample))
     # print(sample[0].shape)
     # print(sample[1].shape)
-    test_histroy = torch.load(r"/work/results/models_nonpretrained/history_adam_cifar10_unet_l2loss.txt")
-    print(test_histroy)
-    test_histroy = torch.load(r"/work/results/models_nonpretrained/history_cmal_cifar10_unet_l2loss.txt")
-    print(test_histroy)
 
-    # test_histroy = torch.load(r"/work/results/models_nonpretrained/train_adam_cifar10_resnet18_model_best.pth")
+
+
+    # ==================== DATALOADER AND TRAINING ========================
+
+    # trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True) # Togliere random reshuffle --> shuffle=False
+    # testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False)
+    # history = train_model(sm_root='/work/results/models_nonpretrained/', 
+    #                       opt=args.opt,
+    #                       slr=args.scheduler, 
+    #                       ep=args.ep, 
+    #                       ds=args.dts, 
+    #                       net_name=args.network, 
+    #                       n_class=num_classes, 
+    #                       history_ID=args.trial, 
+    #                       dts_train=trainloader, 
+    #                       dts_test=testloader,
+    #                       verbose_train=False)
+
+
+
+
+
+    # ==================== PRINT HISTORY =========================
+
+    # test_histroy = torch.load(r"/work/results/models_nonpretrained/history_adam_cifar10_unet_l2loss.txt")
+    # print(test_histroy)
+    # with open('adam.json', 'w') as f:
+    #     json.dump(test_histroy, f)
+
+    # test_histroy = torch.load(r"/work/results/models_nonpretrained/history_cmal_cifar10_unet_l2loss.txt")
+    # print(test_histroy)
+    # with open('cmal.json', 'w') as f:
+    #     json.dump(test_histroy, f)
     
+    # test_histroy = torch.load(r"/work/results/models_nonpretrained/history_sgd_cifar10_unet_l2loss.txt")
+    # print(test_histroy)
+    # with open('sgd.json', 'w') as f:
+    #     json.dump(test_histroy, f)

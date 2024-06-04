@@ -143,6 +143,23 @@ def set_optimizer(opt:str, model: torchvision.models, *args, **kwargs):
         raise SystemError('RICORDATI DI SCEGLIERE L OTTIMIZZATORE!  :)')
     return optimizer
 
+def set_scheduler(slr:str, optimizer: torch.optim.Optimizer, *args, **kwargs):
+    if slr == 'stepLR':
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 5, gamma=0.1, *args, **kwargs)
+    elif slr == 'MultiplicativeLR':
+        lambda1 = lambda epoch: 0.95
+        scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer, lambda1, *args, **kwargs)
+    elif slr == 'MultiStepLR':
+        milestones = [3, 6, 9]
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.1, *args, **kwargs)
+    elif slr == 'ExponentialLR':
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.1, *args, **kwargs)
+    elif slr == 'ReduceLROnPlateau':
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=3 *args, **kwargs)
+    else:
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 5, gamma=0.1, *args, **kwargs)
+    return scheduler
+
 def hardware_check():
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     print("Actual device: ", device)
