@@ -16,9 +16,11 @@ def set_w(model, w):
 
 
 class CMA_L(torch.optim.Optimizer):
+    #TODO: remove eps, alpha(double check), in caso test gamma più
 
-    def __init__(self, params, alpha=1e-3, zeta=1e-3, eps=1e-3,theta=1e-3,
-                 delta=1e-3,gamma=1e-3,tau=1e-2,verbose=False,max_it_EDFL=100,
+
+    def __init__(self, params, alpha=1e-3, zeta=1e-2, eps=1e-3, theta=0.75,
+                 delta=0.9,gamma=1e-6,tau=1e-2,verbose=False,max_it_EDFL=100,
                  verbose_EDFL=False, dampening=0.0, momentum=0.0, nesterov=False):
 
 

@@ -9,9 +9,9 @@ import csv
 import ast
 import torchvision
 from typing import Union
-from cmalight import CMA_L
-from utils_diffusion_model import T
-from diffusionModel import forward_diffusion_sample
+from optimizers.cmalight import CMA_L
+from utils.utils_diffusion_model import T
+from networks.diffusionModel import forward_diffusion_sample
 import torch.nn.functional as F
 from tqdm import tqdm
 
@@ -103,13 +103,12 @@ def accuracy_diffusion(data_loader: torch.utils.data.DataLoader,
     return accuracy
 
 def get_w(model):
-    weights = [p.ravel().detach() for p in model.parameters()]
-    return torch.cat(weights)
+    return torch.cat([p.data.view(-1) for p in model.parameters()])
 
 def set_w(model, w):
     index = 0
     for param in model.parameters():
-        param_size = torch.prod(torch.tensor(param.size())).item()
+        param_size = torch.numel(param)
         param.data = w[index:index+param_size].view(param.size()).to(param.device)
         index += param_size
 
@@ -136,7 +135,7 @@ def set_optimizer(opt:str, model: torchvision.models, *args, **kwargs):
     elif opt == 'rprop':
         optimizer = torch.optim.Rprop(model.parameters(),*args,**kwargs)
     elif opt == 'sgd':
-        optimizer = torch.optim.SGD(model.parameters(),*args,**kwargs)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01, *args,**kwargs)
     elif opt == 'cmal':
         optimizer = CMA_L(model.parameters(),momentum=0.9, nesterov=True)
     else:
@@ -145,7 +144,7 @@ def set_optimizer(opt:str, model: torchvision.models, *args, **kwargs):
 
 def set_scheduler(slr:str, optimizer: torch.optim.Optimizer, *args, **kwargs):
     if slr == 'stepLR':
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 5, gamma=0.1, *args, **kwargs)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 1, gamma=0.95, *args, **kwargs)
     elif slr == 'MultiplicativeLR':
         lambda1 = lambda epoch: 0.95
         scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer, lambda1, *args, **kwargs)

@@ -10,7 +10,7 @@ import csv
 import ast
 import torchvision
 from typing import Union
-from cmalight import CMA_L
+from optimizers.cmalight import CMA_L
 import torch.nn.functional as F
 from torchvision import transforms
 
@@ -82,10 +82,16 @@ def sample_timestep(model, x, t):
         return model_mean + torch.sqrt(posterior_variance_t) * noise
 
 @torch.no_grad()
-def sample_plot_image(arg):
+def sample_plot_image(model, arg, x_noisy=None):
     # Sample noise
     img_size = arg.IMG_SIZE
-    img = torch.randn((1, 3, img_size, img_size), device=arg.device)
+    # if x_noisy is None:
+    #     img = torch.randn((1, 3, img_size, img_size), device=arg.device)
+    # else:
+    #     img = x_noisy
+
+    img = x_noisy
+    
     plt.figure(figsize=(15,15))
     plt.axis('off')
     num_images = 10
@@ -95,12 +101,13 @@ def sample_plot_image(arg):
         # print(i)
         t = torch.full((1,), i, device=arg.device, dtype=torch.long)
         # print(t)
-        img = sample_timestep(img, t)
+        img = sample_timestep(model, img, t)
         # Edit: This is to maintain the natural range of the distribution
         img = torch.clamp(img, -1.0, 1.0)
         if i % stepsize == 0:
             plt.subplot(1, num_images, int(i/stepsize)+1)
             show_tensor_image(img.detach().cpu())
+    # plt.savefig("test_image.png")
     plt.show()
 
 # =================== Init DDPM variables =======================

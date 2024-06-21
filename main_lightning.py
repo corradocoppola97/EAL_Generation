@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 import torchmetrics
 from DataModule import CIFARDataModule
-from NetworkModule import ResNet
+from networks.NetworkModule import ResNet
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 pl.seed_everything(0)

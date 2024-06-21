@@ -9,7 +9,7 @@ import numpy as np
 
 import torch.nn.functional as F
 
-from utils_diffusion_model import *
+from utils.utils_diffusion_model import *
 
 # =================== Forward Step =======================
 

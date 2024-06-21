@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from diffusionModel import SimpleUnet
+from networks.diffusionModel import SimpleUnet
 
 def initialize_weights(model):
     for m in model.modules():

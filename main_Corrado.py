@@ -1,7 +1,7 @@
 import time, os , argparse
 from utils import closure, count_parameters, set_optimizer, accuracy, hardware_check
-from cmalight import get_w
-from network import get_pretrained_net
+from optimizers.cmalight import get_w
+from networks.network import get_pretrained_net
 import torch
 import torchvision
 from torch.utils.data import Subset
@@ -58,6 +58,7 @@ def train_model(sm_root: str,
                'elapsed_time_noVAL': [0.0], 'f_tilde': []}
     
     # Train
+    # print("Strating training loop")
     for epoch in range(ep):
         start_time = time.time()
         model.train()
@@ -113,7 +114,7 @@ def train_model(sm_root: str,
         if min_acc < val_acc:
             torch.save(model, sm_root + 'train_' + opt + '_' + ds + '_' + net_name + '_model_best.pth')
             min_acc = val_acc
-            print('\n - New best Val-ACC: {:.3f} at epoch {} - \n'.format(min_acc, ep + 1))
+            print('\n - New best Val-ACC: {:.3f} at epoch {} - \n'.format(min_acc, epoch + 1))
 
         torch.save(history, sm_root + 'history_' + opt + '_' + ds + '_' + net_name + '_' + history_ID + '.txt')
 
@@ -126,11 +127,13 @@ if __name__ == '__main__':
 
     # Setup in cmd line
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ep', type=int, default=250)
+    parser.add_argument('--ep', type=int, default=2)
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--seed', type=float, default=12345)
-    parser.add_argument('--network', type=str, required=True)
-    parser.add_argument('--opt', type=str, required=True)
+    # parser.add_argument('--network', type=str, required=True)
+    # parser.add_argument('--opt', type=str, required=True)
+    parser.add_argument('--network', type=str, default='resnet18')
+    parser.add_argument('--opt', type=str, default='adam')
     parser.add_argument('--dts', type=str, default='cifar10')
     parser.add_argument('--trial', type=str, default='prova')
 
@@ -144,7 +147,7 @@ if __name__ == '__main__':
     hardware_check()
 
     dts_root = '/work/datasets/'
-    bs=128
+    bs=8
     nw=8
 
     if args.dts == 'cifar10': # Classification
@@ -170,8 +173,15 @@ if __name__ == '__main__':
         num_classes = len(trainset.classes)
     
 
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, pin_memory=True, num_workers=nw) # Togliere random reshuffle --> shuffle=False
-    testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False, pin_memory=True, num_workers=nw)
+    trainset = Subset(trainset, range(bs*4))
+    testset = Subset(testset, range(bs*4))
+
+    # trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, pin_memory=True, num_workers=nw) # Togliere random reshuffle --> shuffle=False
+    # testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False, pin_memory=True, num_workers=nw)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, pin_memory=True) # Togliere random reshuffle --> shuffle=False
+    testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False, pin_memory=True)
+    
+    
     history = train_model(sm_root='/work/results/models_nonpretrained/', 
                           opt=args.opt, 
                           ep=args.ep, 
@@ -181,4 +191,4 @@ if __name__ == '__main__':
                           history_ID=args.trial, 
                           dts_train=trainloader, 
                           dts_test=testloader,
-                          verbose_train=False)
+                          verbose_train=True)

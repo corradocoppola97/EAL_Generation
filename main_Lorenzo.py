@@ -3,8 +3,8 @@ import argparse
 from tqdm import tqdm
 
 from utils import *
-from network import *
-from cmalight import *
+from networks.network import *
+from cmalight.cmalight import *
 import torch
 import torchvision
 
