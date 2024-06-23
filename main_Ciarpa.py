@@ -167,7 +167,7 @@ if __name__ == '__main__':
 
     # Setup in cmd line
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ep', type=int, default=30)
+    parser.add_argument('--ep', type=int, default=100)
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--seed', type=float, default=12345)
 
@@ -180,6 +180,7 @@ if __name__ == '__main__':
     parser.add_argument('--scheduler', type=str, default=None)
 
     parser.add_argument('--dts', type=str, default='cifar10')
+    parser.add_argument('--dts_root', type=str, default='/work/datasets/')
     parser.add_argument('--trial', type=str, default='l2loss_epoch_30')
 
     args = parser.parse_args()
@@ -191,7 +192,8 @@ if __name__ == '__main__':
  
     hardware_check()
 
-    dts_root = '/work/datasets/'
+    dts_root = args.dts_root
+    # dts_root = '/work/datasets/'
     bs=8
     nw=8
 
