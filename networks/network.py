@@ -166,12 +166,13 @@ def get_object_detection_model(num_classes):
     return model
 
 # Definizione della rete
-def get_diffusion_model(num_classes, pretrained=False, checkpoint=None):
+def get_diffusion_model(num_classes, checkpoint=None):
     # Caricamento del backbone ResNet-50 pre-addestrato
     
-    if pretrained:
-        pretrainedmodel = SimpleUnet()
-        pretrainedmodel.load_state_dict(torch.load(checkpoint))
+    if checkpoint is not None:
+        # pretrainedmodel = SimpleUnet()
+        # pretrainedmodel.load_state_dict(torch.load(checkpoint))
+        pretrainedmodel = torch.load(checkpoint)
     else:
         pretrainedmodel = SimpleUnet()
         initialize_weights(pretrainedmodel)

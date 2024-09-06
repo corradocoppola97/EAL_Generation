@@ -135,6 +135,7 @@ def set_optimizer(opt:str, model: torchvision.models, *args, **kwargs):
     elif opt == 'rprop':
         optimizer = torch.optim.Rprop(model.parameters(),*args,**kwargs)
     elif opt == 'sgd':
+        # optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, nesterov=True *args,**kwargs)
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01, *args,**kwargs)
     elif opt == 'cmal':
         optimizer = CMA_L(model.parameters(),momentum=0.9, nesterov=True)

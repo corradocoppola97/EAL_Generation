@@ -1,5 +1,5 @@
 import time, os , argparse
-from utils import closure, count_parameters, set_optimizer, accuracy, hardware_check
+from utils.utils import closure, count_parameters, set_optimizer, accuracy, hardware_check
 from optimizers.cmalight import get_w
 from networks.network import get_pretrained_net
 import torch
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
     # Setup in cmd line
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ep', type=int, default=2)
+    parser.add_argument('--ep', type=int, default=10)
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--seed', type=float, default=12345)
     # parser.add_argument('--network', type=str, required=True)
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     parser.add_argument('--network', type=str, default='resnet18')
     parser.add_argument('--opt', type=str, default='adam')
     parser.add_argument('--dts', type=str, default='cifar10')
-    parser.add_argument('--trial', type=str, default='prova')
+    parser.add_argument('--trial', type=str, default='classification_10')
 
     args = parser.parse_args()
 
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     hardware_check()
 
     dts_root = '/work/datasets/'
-    bs=8
+    bs=16
     nw=8
 
     if args.dts == 'cifar10': # Classification
@@ -173,13 +173,13 @@ if __name__ == '__main__':
         num_classes = len(trainset.classes)
     
 
-    trainset = Subset(trainset, range(bs*4))
-    testset = Subset(testset, range(bs*4))
+    # trainset = Subset(trainset, range(bs*4))
+    # testset = Subset(testset, range(bs*4))
 
     # trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, pin_memory=True, num_workers=nw) # Togliere random reshuffle --> shuffle=False
     # testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False, pin_memory=True, num_workers=nw)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, pin_memory=True) # Togliere random reshuffle --> shuffle=False
-    testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False, pin_memory=True)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True) # Togliere random reshuffle --> shuffle=False
+    testloader = torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False)
     
     
     history = train_model(sm_root='/work/results/models_nonpretrained/', 

@@ -38,19 +38,58 @@ def imshow(img):
     plt.imshow(np.transpose(npimg, (1, 2, 0)))  # Converti da Tensor a immagine
     plt.show()
 
+# def show_tensor_image(image):
+#     reverse_transforms = transforms.Compose([
+#         transforms.Lambda(lambda t: (t + 1) / 2),
+#         # transforms.Lambda(lambda t: t.permute(1, 2, 0)), # CHW to HWC
+#         transforms.Lambda(lambda t: t.squeeze(0)), # CHW to HWC
+#         transforms.Lambda(lambda t: t * 255.),
+#         transforms.Lambda(lambda t: t.numpy().astype(np.uint8)),
+#         transforms.ToPILImage(),
+#     ])
+
+#     # Take first image of batch
+#     if len(image.shape) == 4:
+#         image = image[0, :, :, :]
+
+#     plt.imshow(reverse_transforms(image), cmap='gray')
+
+#     # if image.shape[1] == 1:
+#     #     plt.imshow(reverse_transforms(image), cmap='gray')
+#     # else:
+#     #     plt.imshow(reverse_transforms(image))
+
+
 def show_tensor_image(image):
-    reverse_transforms = transforms.Compose([
-        transforms.Lambda(lambda t: (t + 1) / 2),
-        transforms.Lambda(lambda t: t.permute(1, 2, 0)), # CHW to HWC
-        transforms.Lambda(lambda t: t * 255.),
-        transforms.Lambda(lambda t: t.numpy().astype(np.uint8)),
-        transforms.ToPILImage(),
-    ])
+    n_channels = image.shape[1]
+
+    if n_channels == 1:
+        reverse_transforms = transforms.Compose([
+            transforms.Lambda(lambda t: (t + 1) / 2),  # Scale from [-1, 1] to [0, 1]
+            transforms.Lambda(lambda t: t.squeeze(0)),  # Remove the channel dimension for grayscale images
+            transforms.Lambda(lambda t: t * 255.),  # Scale from [0, 1] to [0, 255]
+            transforms.Lambda(lambda t: t.numpy().astype(np.uint8)),
+        ])
+
+    else:
+        reverse_transforms = transforms.Compose([
+            transforms.Lambda(lambda t: (t + 1) / 2),  # Scale from [-1, 1] to [0, 1]
+            transforms.Lambda(lambda t: t.permute(1, 2, 0)),  # Remove the channel dimension for grayscale images
+            transforms.Lambda(lambda t: t * 255.),  # Scale from [0, 1] to [0, 255]
+            transforms.Lambda(lambda t: t.numpy().astype(np.uint8)),
+        ])
 
     # Take first image of batch
     if len(image.shape) == 4:
         image = image[0, :, :, :]
-    plt.imshow(reverse_transforms(image))
+    elif len(image.shape) == 3:
+        image = image[0, :, :]
+    
+    image = reverse_transforms(image)
+    if n_channels == 1:
+        plt.imshow(image, cmap='gray')
+    else:
+        plt.imshow(image)
 
 # =================== Sample Process =======================
 
@@ -85,12 +124,12 @@ def sample_timestep(model, x, t):
 def sample_plot_image(model, arg, x_noisy=None):
     # Sample noise
     img_size = arg.IMG_SIZE
-    # if x_noisy is None:
-    #     img = torch.randn((1, 3, img_size, img_size), device=arg.device)
-    # else:
-    #     img = x_noisy
+    if x_noisy is None:
+        img = torch.randn((1, arg.channels, img_size, img_size), device=arg.device)
+    else:
+        img = x_noisy
 
-    img = x_noisy
+    # img = x_noisy
     
     plt.figure(figsize=(15,15))
     plt.axis('off')

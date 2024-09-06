@@ -4,14 +4,13 @@ import torch.optim as optim
 import numpy as np
 import random
 import time
-from sklearn.datasets import fetch_california_housing, load_diabetes
+from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
 
 from linesearchSGD import armijo, armijoGeneralized, armijoGoldstein2
 from linesearchSGD import armijoCustomEnforcedCondition, armijoCustomEnforcedReduction, armijoDecreasingZeta, armijo_improved
-
 
 
 # Set random seeds for reproducibility
@@ -26,22 +25,15 @@ set_seed(42)
 
 device = 'cpu'
 
-
 lr = 0.1
 curr_lr = lr
-delta=1e-3
-gamma=1e-4
-
-
-# Load the dataset
-california = fetch_california_housing()
-X = california.data
-y = california.target
+delta = 1e-3
+gamma = 1e-4
 
 # Load the dataset
-# diabetes = load_diabetes()
-# X = diabetes.data
-# y = diabetes.target
+diabetes = load_diabetes()
+X = diabetes.data
+y = diabetes.target
 
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -92,94 +84,25 @@ class MLP(nn.Module):
         x = torch.relu(self.layer2(x))
         x = self.layer3(x)
         return x
-    
+
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 # Initialize the model, loss function, and optimizer
 model = MLP(input_dim=X_train.shape[1])
-# print('\n The model has: {} trainable parameters'.format(count_parameters(model)))
-
 criterion = nn.MSELoss()
 
-# opt = 'sgd'
-# if opt == 'adam':
-#     optimizer = optim.Adam(model.parameters(), lr = lr)
-# elif opt == 'sgd':
-#     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-
-# # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 5, gamma=0.95)
-
-# # Training loop
-# num_epochs = 2000
-
-# doLinesearch = True
-# start_time = time.time()
-# for epoch in range(num_epochs):
-#     model.train()
-#     w_before = get_w(model)
-
-#     optimizer.zero_grad()
-#     outputs = model(X_train)
-#     loss = criterion(outputs, y_train)
-#     f_tilde = loss.item()
-
-#     loss.backward()
-#     optimizer.step()
-
-#     if (epoch+1) % 1 == 0:
-#         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
-
-#     if doLinesearch:
-#         if opt == 'sgd':
-#             w_after = get_w(model)
-#             direction = ((w_after - w_before) / curr_lr)
-
-#         gradient_dir = - torch.dot(direction, direction)
-#         if curr_lr * 10 > 1:
-#             alfa = 1
-#         else:
-#             alfa = curr_lr * 10
-
-#         alfa, f_alfa = armijoDecreasingZeta(f_tilde, criterion, w_before, gamma, direction, gradient_dir, model, dataset, closure)
-#         curr_lr = alfa
-#         set_lr(optimizer, alfa)
-#         # set_w(model, w_prova)
-        
-#         # print()
-    
-#     # scheduler.step()
-
-# end_time = time.time()
-# print(f"total_time: {end_time - start_time}")
-
-# # Evaluate the model
-# model.eval()
-# with torch.no_grad():
-#     predictions = model(X_test)
-#     test_loss = criterion(predictions, y_test)
-#     r2 = r2_score(y_test.numpy(), predictions.numpy())
-#     print(f'Test MSE: {test_loss.item():.4f}')
-#     print(f'R-squared: {r2:.4f}')
-
-# # print(closure((X_test, y_test), model, criterion))
-
-
-#MINI BATCH VERSION
-
-opt = 'sgd'
+# MINI BATCH VERSION
+opt = 'adam'
 if opt == 'adam':
-    optimizer = optim.Adam(model.parameters(), lr = lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 elif opt == 'sgd':
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    # optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum = 0.9, nesterov=True)
-
-# scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 5, gamma=0.95)
 
 # Training loop
 num_epochs = 5000
 
-doLinesearch = True
+doLinesearch = False
 start_time = time.time()
 for epoch in range(num_epochs):
     model.train()
@@ -201,20 +124,16 @@ for epoch in range(num_epochs):
             w_after = get_w(model)
             direction = ((w_after - w_before) / curr_lr)
 
-        gradient_dir = - torch.dot(direction, direction)
+        gradient_dir = -torch.dot(direction, direction)
         if curr_lr * 10 > 1:
             alfa = 1
         else:
             alfa = curr_lr * 10
 
-        alfa, f_alfa, n_func_eval = armijoDecreasingZeta(f_tilde, criterion, w_before, gamma, direction, gradient_dir, model, dataset, closure)
+        alfa, f_alfa = armijoDecreasingZeta(f_tilde, criterion, w_before, gamma, direction, gradient_dir, model, dataset, closure)
         curr_lr = alfa
         set_lr(optimizer, alfa)
         # set_w(model, w_prova)
-        
-        # print()
-    
-    # scheduler.step()
 
 end_time = time.time()
 print(f"total_time: {end_time - start_time}")
@@ -227,5 +146,3 @@ with torch.no_grad():
     r2 = r2_score(y_test.numpy(), predictions.numpy())
     print(f'Test MSE: {test_loss.item():.4f}')
     print(f'R-squared: {r2:.4f}')
-
-# print(closure((X_test, y_test), model, criterion))
