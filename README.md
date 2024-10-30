@@ -1,3 +1,1 @@
-Initial version of the CMA Light Algorithm as described in the paper.
-
-https://arxiv.org/abs/2307.15775
+Early results on Enhanced Armijo Line-search applied in the task of image generation.
